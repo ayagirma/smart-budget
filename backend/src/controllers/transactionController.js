@@ -1,4 +1,5 @@
 import { query } from '../db/index.js';
+import { autoCategorize } from '../utils/categorization.js';
 
 // @desc    Get all transactions
 // @route   GET /api/transactions
@@ -29,8 +30,12 @@ export const addTransaction = async (req, res) => {
     const { amount, type, description, date, category_id } = req.body;
     const userId = req.user.id;
 
-    if (!amount || !type || !date) {
+    if (amount === undefined || !type || !date) {
       return res.status(400).json({ error: 'Amount, type, and date are required' });
+    }
+
+    if (isNaN(amount) || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number greater than 0' });
     }
 
     const newTransaction = await query(
@@ -93,8 +98,12 @@ export const updateTransaction = async (req, res) => {
     const { amount, type, description, date, category_id } = req.body;
     const userId = req.user.id;
 
-    if (!amount || !type || !date) {
+    if (amount === undefined || !type || !date) {
       return res.status(400).json({ error: 'Amount, type, and date are required' });
+    }
+
+    if (isNaN(amount) || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number greater than 0' });
     }
 
     const updatedTransaction = await query(
@@ -155,25 +164,151 @@ export const uploadCsvTransactions = async (req, res) => {
       
       // Attempt to parse amount
       let parsedAmount = parseFloat(t.amount.toString().replace(/[^0-9.-]+/g,""));
-      if (isNaN(parsedAmount)) continue;
-
-      const type = parsedAmount < 0 ? 'expense' : 'income';
-      const absAmount = Math.abs(parsedAmount);
+      if (isNaN(parsedAmount) || parsedAmount === 0) continue;
 
       // Parse date safely
       let parsedDate = new Date(t.date);
       if (isNaN(parsedDate)) continue;
 
+      const type = parsedAmount < 0 ? 'expense' : 'income';
+      const absAmount = Math.abs(parsedAmount);
+      const dateStr = parsedDate.toISOString().split('T')[0];
+
+      // Check if identical transaction already exists for this user
+      const existing = await query(
+        'SELECT id FROM transactions WHERE user_id = $1 AND date = $2 AND amount = $3 AND type = $4 AND description = $5',
+        [userId, dateStr, absAmount, type, t.description]
+      );
+
+      if (existing.rows.length > 0) {
+        continue;
+      }
+
+      const categoryId = await autoCategorize(userId, t.description);
+
       await query(
-        'INSERT INTO transactions (user_id, amount, type, description, date) VALUES ($1, $2, $3, $4, $5)',
-        [userId, absAmount, type, t.description, parsedDate.toISOString().split('T')[0]]
+        'INSERT INTO transactions (user_id, category_id, amount, type, description, date) VALUES ($1, $2, $3, $4, $5, $6)',
+        [userId, categoryId, absAmount, type, t.description, dateStr]
       );
       inserted++;
     }
 
-    res.status(201).json({ message: \`Successfully uploaded \${inserted} transactions\` });
+    res.status(201).json({ message: `Successfully uploaded ${inserted} transactions` });
   } catch (err) {
     console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Get spending forecast and anomalies comparison
+// @route   GET /api/transactions/forecast
+// @access  Private
+export const getSpendingForecast = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const currentDay = new Date().getDate();
+    
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+    const { rows: categories } = await query(
+      "SELECT id, name, color, classification FROM categories WHERE user_id = $1 AND type = 'expense'",
+      [userId]
+    );
+
+    const { rows: budgets } = await query(
+      'SELECT category_id, amount FROM budgets WHERE user_id = $1 AND month = $2 AND year = $3',
+      [userId, currentMonth, currentYear]
+    );
+
+    const { rows: monthlyHistory } = await query(
+      `SELECT 
+         category_id,
+         EXTRACT(MONTH FROM date)::integer as month,
+         EXTRACT(YEAR FROM date)::integer as year,
+         SUM(amount)::numeric as total
+       FROM transactions
+       WHERE user_id = $1 AND type = 'expense'
+       GROUP BY category_id, EXTRACT(MONTH FROM date), EXTRACT(YEAR FROM date)`,
+      [userId]
+    );
+
+    const forecastResults = [];
+
+    for (const cat of categories) {
+      const history = monthlyHistory.filter(h => h.category_id === cat.id);
+      
+      const currentMonthRecord = history.find(h => h.month === currentMonth && h.year === currentYear);
+      const currentSpent = currentMonthRecord ? parseFloat(currentMonthRecord.total) : 0;
+      
+      const historicalRecords = history.filter(h => !(h.month === currentMonth && h.year === currentYear));
+      
+      historicalRecords.sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.month - a.month;
+      });
+
+      let averageMonthlySpent = 0;
+      let forecastedNextMonth = 0;
+      let trendDescription = 'Stable';
+      let trendFactor = 1.0;
+
+      if (historicalRecords.length > 0) {
+        const recentRecords = historicalRecords.slice(0, 3);
+        const sum = recentRecords.reduce((acc, r) => acc + parseFloat(r.total), 0);
+        averageMonthlySpent = sum / recentRecords.length;
+
+        if (recentRecords.length >= 2) {
+          const t1 = parseFloat(recentRecords[0].total);
+          const t2 = parseFloat(recentRecords[1].total);
+          if (t2 > 0) {
+            trendFactor = t1 / t2;
+            trendFactor = Math.min(Math.max(trendFactor, 0.6), 1.6);
+            
+            if (trendFactor > 1.1) trendDescription = 'Increasing';
+            else if (trendFactor < 0.9) trendDescription = 'Decreasing';
+          }
+        }
+        
+        forecastedNextMonth = averageMonthlySpent * trendFactor;
+      } else {
+        if (currentSpent > 0) {
+          forecastedNextMonth = (currentSpent / currentDay) * daysInMonth;
+          averageMonthlySpent = currentSpent;
+          trendDescription = 'Extrapolated';
+        } else {
+          forecastedNextMonth = 0;
+          averageMonthlySpent = 0;
+          trendDescription = 'No data';
+        }
+      }
+
+      const budgetObj = budgets.find(b => b.category_id === cat.id);
+      const budgetLimit = budgetObj ? parseFloat(budgetObj.amount) : 0;
+
+      const isOverBudget = budgetLimit > 0 && currentSpent > budgetLimit;
+      const isForecastOverBudget = budgetLimit > 0 && forecastedNextMonth > budgetLimit;
+
+      forecastResults.push({
+        categoryId: cat.id,
+        categoryName: cat.name,
+        categoryColor: cat.color,
+        classification: cat.classification,
+        currentSpent,
+        averageMonthlySpent,
+        forecastedNextMonth,
+        budgetLimit,
+        trendDescription,
+        trendFactor,
+        isOverBudget,
+        isForecastOverBudget
+      });
+    }
+
+    res.json(forecastResults);
+  } catch (err) {
+    console.error('Error calculating forecast:', err.message);
     res.status(500).send('Server Error');
   }
 };

@@ -56,3 +56,27 @@ export const setBudget = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
+
+// @desc    Delete a budget limit
+// @route   DELETE /api/budgets/:id
+// @access  Private
+export const deleteBudget = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const result = await query(
+      'DELETE FROM budgets WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Budget limit not found' });
+    }
+
+    res.json({ message: 'Budget limit removed successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Papa from 'papaparse';
 import axios from 'axios';
 import { Upload } from 'lucide-react';
@@ -51,13 +52,13 @@ const CsvUpload = ({ onUploadSuccess }) => {
   return (
     <>
       <label className="btn btn-secondary flex items-center gap-2 cursor-pointer">
-        <Upload size={20} /> Upload CSV
+        <Upload size={18} /> Upload CSV
         <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleFileUpload} />
       </label>
 
-      {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div className="card max-w-md w-full animate-fade-in" style={{ padding: '2rem' }}>
+      {showModal && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ padding: '1.5rem', width: '95%', maxWidth: '450px', maxHeight: '85vh', overflowY: 'auto' }}>
             <h2 style={{ marginBottom: '1.5rem' }}>Map CSV Columns</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
               Please select which column from your CSV corresponds to the required fields.
@@ -92,7 +93,8 @@ const CsvUpload = ({ onUploadSuccess }) => {
               <button className="btn btn-primary" onClick={handleUpload} disabled={!mapping.date || !mapping.amount || !mapping.description}>Upload Data</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

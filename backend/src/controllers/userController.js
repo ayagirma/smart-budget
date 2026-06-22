@@ -9,6 +9,10 @@ export const completeOnboarding = async (req, res) => {
       return res.status(400).json({ error: 'Monthly income and budget rule are required' });
     }
 
+    if (isNaN(monthlyIncome) || Number(monthlyIncome) < 1) {
+      return res.status(400).json({ error: 'Monthly income must be at least 1' });
+    }
+
     const result = await query(
       'UPDATE users SET onboarding_completed = true, monthly_income = $1, budget_rule = $2 WHERE id = $3 RETURNING id, onboarding_completed, monthly_income, budget_rule',
       [monthlyIncome, budgetRule, userId]

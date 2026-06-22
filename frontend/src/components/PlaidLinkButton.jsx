@@ -40,7 +40,7 @@ const PlaidLinkButton = ({ onSuccessCallback }) => {
       onClick={() => open()} 
       disabled={!ready}
     >
-      <Link2 size={20} /> Link Bank
+      <Link2 size={18} /> Link Bank
     </button>
   );
 };

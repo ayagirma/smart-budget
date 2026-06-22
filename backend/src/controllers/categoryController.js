@@ -6,9 +6,9 @@ import { query } from '../db/index.js';
 export const getCategories = async (req, res) => {
   try {
     const userId = req.user.id;
-    // Get user-specific categories OR default categories (where user_id is NULL)
+    // Get user-specific categories
     const result = await query(
-      'SELECT * FROM categories WHERE user_id = $1 OR is_default = true ORDER BY name ASC',
+      'SELECT * FROM categories WHERE user_id = $1 ORDER BY name ASC',
       [userId]
     );
     res.json(result.rows);

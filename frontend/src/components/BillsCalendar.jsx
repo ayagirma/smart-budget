@@ -98,6 +98,23 @@ const BillsCalendar = ({ bills, fetchBills }) => {
                     <p style={{ fontSize: '1.125rem', fontWeight: 'bold', margin: '0.25rem 0 0 0' }}>
                       ${Number(bill.amount).toFixed(2)}
                     </p>
+                    {!bill.is_paid && (
+                      <span 
+                        style={{ 
+                          display: 'inline-block',
+                          fontSize: '0.7rem', 
+                          padding: '0.15rem 0.4rem', 
+                          background: 'rgba(168, 85, 247, 0.1)', 
+                          color: 'var(--primary)', 
+                          borderRadius: '4px',
+                          marginTop: '0.5rem',
+                          fontWeight: '600'
+                        }}
+                        title="Online Bill Payment is coming soon!"
+                      >
+                        ⚡ Pay Online (Coming Soon)
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <button onClick={() => handleMarkPaid(bill)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: bill.is_paid ? 'var(--success)' : 'var(--text-secondary)' }}>

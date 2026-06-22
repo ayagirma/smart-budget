@@ -1,60 +1,47 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
+import Transactions from './pages/Transactions';
+import Budgets from './pages/Budgets';
+import Analytics from './pages/Analytics';
 import Onboarding from './pages/Onboarding';
+import Layout from './components/Layout';
+import { useApp } from './context/AppContext';
 import './App.css';
 
 function App() {
-  // A simple auth check (can be improved with Context/State)
-  const isAuthenticated = !!localStorage.getItem('token');
-  const onboardingCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+  const { isAuthenticated, user, loading } = useApp();
+
+  if (loading) {
+    return <div className="flex items-center justify-center" style={{ height: '100vh', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>Loading application...</div>;
+  }
+
+  const onboardingCompleted = user?.onboardingCompleted === true;
 
   return (
     <Router>
-      <div className="app-container">
-        {/* Simple Top Navigation for premium feel */}
-        {isAuthenticated && (
-          <nav style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)', backdropFilter: 'blur(10px)' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>B</div>
-              BudgetApp
-            </div>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-              }}
-            >
-              Logout
-            </button>
-          </nav>
+      <Routes>
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+        
+        <Route 
+          path="/onboarding" 
+          element={isAuthenticated && !onboardingCompleted ? <Onboarding /> : <Navigate to="/" />} 
+        />
+        
+        {/* Authenticated Layout Routes */}
+        {isAuthenticated && onboardingCompleted ? (
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/budgets" element={<Budgets />} />
+            <Route path="/analytics" element={<Analytics />} />
+          </Route>
+        ) : isAuthenticated && !onboardingCompleted ? (
+          <Route path="*" element={<Navigate to="/onboarding" />} />
+        ) : (
+          <Route path="*" element={<Navigate to="/login" />} />
         )}
-
-        <main className="page-wrapper container">
-          <Routes>
-            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
-            
-            <Route 
-              path="/onboarding" 
-              element={isAuthenticated && !onboardingCompleted ? <Onboarding /> : <Navigate to="/" />} 
-            />
-            
-            <Route 
-              path="/" 
-              element={
-                isAuthenticated ? (
-                  onboardingCompleted ? <Dashboard /> : <Navigate to="/onboarding" />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              } 
-            />
-            
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
+      </Routes>
     </Router>
   );
 }

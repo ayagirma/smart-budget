@@ -3,6 +3,7 @@ import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import dotenv from 'dotenv';
 import { query } from '../db/index.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { autoCategorize } from '../utils/categorization.js';
 
 dotenv.config();
 
@@ -111,24 +112,28 @@ router.post('/sync', protect, async (req, res) => {
       const transactions = response.data.transactions;
       
       for (const t of transactions) {
-        // Find if it exists to avoid duplicates (simplified - better to use plaid_transaction_id in DB)
-        // For now, we'll just insert and assume the user wants them all. 
-        // In a real app, you MUST track plaid_transaction_id.
-        // We will insert them with category_id = null.
-        
+        const plaidTxId = t.transaction_id;
         const type = t.amount < 0 ? 'income' : 'expense';
         const amount = Math.abs(t.amount);
         
-        await query(
-          `INSERT INTO transactions (user_id, amount, type, description, date)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [userId, amount, type, t.name, t.date]
+        // Auto-categorize
+        const categoryId = await autoCategorize(userId, t.name);
+        
+        const result = await query(
+          `INSERT INTO transactions (user_id, category_id, amount, type, description, date, plaid_transaction_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (plaid_transaction_id) DO NOTHING
+           RETURNING id`,
+          [userId, categoryId, amount, type, t.name, t.date, plaidTxId]
         );
-        totalSynced++;
+        
+        if (result.rowCount > 0) {
+          totalSynced++;
+        }
       }
     }
 
-    res.json({ message: \`Successfully synced \${totalSynced} transactions\` });
+    res.json({ message: `Successfully synced ${totalSynced} transactions` });
   } catch (error) {
     console.error('Error syncing transactions:', error.response?.data || error);
     res.status(500).json({ error: 'Failed to sync transactions' });

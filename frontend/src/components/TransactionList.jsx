@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Edit2, Trash2 } from 'lucide-react';
 
 const TransactionList = ({ transactions, onEdit, onDelete }) => {
+  const [visibleCount, setVisibleCount] = useState(10);
   if (!transactions || transactions.length === 0) {
     return (
       <div className="text-center text-muted" style={{ padding: '2rem 0' }}>
@@ -15,17 +17,18 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {sortedTransactions.slice(0, 10).map((transaction) => {
+      {sortedTransactions.slice(0, visibleCount).map((transaction) => {
         const isIncome = transaction.type === 'income';
         const date = new Date(transaction.date).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
-          year: 'numeric'
+          year: 'numeric',
+          timeZone: 'UTC'
         });
 
         return (
           <div 
-            key={transaction._id} 
+            key={transaction.id} 
             className="flex justify-between items-center" 
             style={{ 
               padding: '1rem', 
@@ -83,6 +86,35 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
           </div>
         );
       })}
+      
+      {sortedTransactions.length > visibleCount && (
+        <div className="flex justify-center mt-2">
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setVisibleCount(prev => prev + 15)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border-color)',
+              backdropFilter: 'blur(10px)',
+              padding: '0.75rem 1.5rem',
+              width: '100%',
+              maxWidth: '300px',
+              transition: 'all 0.2s ease',
+              marginTop: '0.5rem'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'var(--primary)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            Load More ({sortedTransactions.length - visibleCount} remaining)
+          </button>
+        </div>
+      )}
     </div>
   );
 };

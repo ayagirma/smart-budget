@@ -2,11 +2,13 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, CheckCircle2, Target, TrendingUp, ShieldCheck, ArrowRight } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const Onboarding = () => {
+  const { token, updateUser } = useApp();
   const [step, setStep] = useState(1);
   const [income, setIncome] = useState('');
-  const [use503020, setUse503020] = useState(true);
+  const [budgetStrategy, setBudgetStrategy] = useState('50-30-20');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -16,10 +18,10 @@ const Onboarding = () => {
       setStep(step + 1);
     } else if (step === 4) {
       if (income && Number(income) > 0) {
-        if (use503020) {
-          setStep(5);
-        } else {
+        if (budgetStrategy === 'custom') {
           handleComplete('custom');
+        } else {
+          setStep(5);
         }
       }
     }
@@ -37,23 +39,24 @@ const Onboarding = () => {
 
   const handleComplete = async (ruleOverride) => {
     setLoading(true);
-    const finalRule = ruleOverride === 'custom' ? 'custom' : '50-30-20';
+    const finalRule = ruleOverride === 'custom' ? 'custom' : budgetStrategy;
     
     try {
       const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${token}` }
       };
       await axios.put('http://localhost:5000/api/users/onboarding', {
         monthlyIncome: Number(income),
         budgetRule: finalRule
       }, config);
       
-      // Update local storage
-      localStorage.setItem('onboardingCompleted', 'true');
-      localStorage.setItem('monthlyIncome', income);
-      localStorage.setItem('budgetRule', finalRule);
+      updateUser({
+        onboardingCompleted: true,
+        monthlyIncome: Number(income),
+        budgetRule: finalRule
+      });
       
-      window.location.href = '/'; // Hard reload to update App.jsx state
+      navigate('/');
     } catch (err) {
       console.error(err);
       alert('Error saving preferences');
@@ -62,9 +65,18 @@ const Onboarding = () => {
   };
 
   const valIncome = Number(income) || 0;
-  const needs = (valIncome * 0.5).toFixed(2);
-  const wants = (valIncome * 0.3).toFixed(2);
-  const savings = (valIncome * 0.2).toFixed(2);
+  
+  // Dynamic percentages based on strategy
+  let needsPct = 0.5, wantsPct = 0.3, savingsPct = 0.2;
+  if (budgetStrategy === '40-20-40') {
+    needsPct = 0.4;
+    wantsPct = 0.2;
+    savingsPct = 0.4;
+  }
+  
+  const needs = (valIncome * needsPct).toFixed(2);
+  const wants = (valIncome * wantsPct).toFixed(2);
+  const savings = (valIncome * savingsPct).toFixed(2);
 
   return (
     <div className="flex items-center justify-center" style={{ minHeight: '80vh', padding: '2rem 0' }}>
@@ -170,15 +182,44 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 mt-6" style={{ padding: '1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <input 
-                type="checkbox" 
-                id="toggleRule"
-                checked={use503020} 
-                onChange={(e) => setUse503020(e.target.checked)}
-                style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--primary)' }}
-              />
-              <label htmlFor="toggleRule" style={{ fontWeight: '500', cursor: 'pointer' }}>Use the 50/30/20 Budgeting Rule</label>
+            <div className="flex flex-col gap-3 mt-6">
+              <label className="form-label" style={{ textAlign: 'left', display: 'block' }}>Choose your budgeting strategy:</label>
+              
+              <div 
+                className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${budgetStrategy === '50-30-20' ? 'bg-primary/10 border-primary' : 'bg-surface border-border'}`}
+                style={{ border: `1px solid ${budgetStrategy === '50-30-20' ? 'var(--primary)' : 'var(--border-color)'}`, background: budgetStrategy === '50-30-20' ? 'rgba(168, 85, 247, 0.1)' : 'var(--bg-surface)' }}
+                onClick={() => setBudgetStrategy('50-30-20')}
+              >
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <strong style={{ display: 'block' }}>The Balanced Approach (50/30/20)</strong>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Standard safety net. Great for most people.</span>
+                </div>
+                {budgetStrategy === '50-30-20' && <CheckCircle2 color="var(--primary)" />}
+              </div>
+
+              <div 
+                className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${budgetStrategy === '40-20-40' ? 'bg-primary/10 border-primary' : 'bg-surface border-border'}`}
+                style={{ border: `1px solid ${budgetStrategy === '40-20-40' ? 'var(--primary)' : 'var(--border-color)'}`, background: budgetStrategy === '40-20-40' ? 'rgba(168, 85, 247, 0.1)' : 'var(--bg-surface)' }}
+                onClick={() => setBudgetStrategy('40-20-40')}
+              >
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <strong style={{ display: 'block' }}>The Aggressive Saver (40/20/40)</strong>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Prioritizes heavy saving (FIRE movement, debt payoff).</span>
+                </div>
+                {budgetStrategy === '40-20-40' && <CheckCircle2 color="var(--primary)" />}
+              </div>
+
+              <div 
+                className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${budgetStrategy === 'custom' ? 'bg-primary/10 border-primary' : 'bg-surface border-border'}`}
+                style={{ border: `1px solid ${budgetStrategy === 'custom' ? 'var(--primary)' : 'var(--border-color)'}`, background: budgetStrategy === 'custom' ? 'rgba(168, 85, 247, 0.1)' : 'var(--bg-surface)' }}
+                onClick={() => setBudgetStrategy('custom')}
+              >
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <strong style={{ display: 'block' }}>Custom / Minimalist</strong>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>No strict percentages. Line-by-line budgeting.</span>
+                </div>
+                {budgetStrategy === 'custom' && <CheckCircle2 color="var(--primary)" />}
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary w-full mt-8" style={{ padding: '1rem' }} disabled={loading}>
@@ -191,14 +232,14 @@ const Onboarding = () => {
         {step === 5 && (
           <div className="animate-fade-in">
             <div className="text-center mb-4">
-              <h2 style={{ marginBottom: '1rem' }}>The 50-30-20 Rule</h2>
+              <h2 style={{ marginBottom: '1rem' }}>The {budgetStrategy === '40-20-40' ? '40/20/40' : '50/30/20'} Rule</h2>
               <p>Based on your income of <strong>${valIncome.toFixed(2)}</strong>, here is your suggested monthly budget:</p>
             </div>
 
             <div className="flex flex-col gap-4" style={{ marginTop: '1.5rem', marginBottom: '2rem' }}>
               <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
                 <div className="flex justify-between items-center mb-2">
-                  <span style={{ fontWeight: '600', color: 'var(--success)' }}>50% Needs</span>
+                  <span style={{ fontWeight: '600', color: 'var(--success)' }}>{needsPct * 100}% Needs</span>
                   <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>${needs}</span>
                 </div>
                 <p style={{ fontSize: '0.875rem', margin: 0 }}>Essentials like rent, groceries, and utilities.</p>
@@ -206,7 +247,7 @@ const Onboarding = () => {
 
               <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
                 <div className="flex justify-between items-center mb-2">
-                  <span style={{ fontWeight: '600', color: '#f59e0b' }}>30% Wants</span>
+                  <span style={{ fontWeight: '600', color: '#f59e0b' }}>{wantsPct * 100}% Wants</span>
                   <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>${wants}</span>
                 </div>
                 <p style={{ fontSize: '0.875rem', margin: 0 }}>Lifestyle choices like restaurants, hobbies, and gifts.</p>
@@ -214,7 +255,7 @@ const Onboarding = () => {
 
               <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
                 <div className="flex justify-between items-center mb-2">
-                  <span style={{ fontWeight: '600', color: '#3b82f6' }}>20% Savings</span>
+                  <span style={{ fontWeight: '600', color: '#3b82f6' }}>{savingsPct * 100}% Savings</span>
                   <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>${savings}</span>
                 </div>
                 <p style={{ fontSize: '0.875rem', margin: 0 }}>Investments, emergency funds, and debt repayment.</p>
@@ -222,7 +263,7 @@ const Onboarding = () => {
             </div>
 
             <button 
-              onClick={() => handleComplete('50-30-20')} 
+              onClick={() => handleComplete(budgetStrategy)} 
               disabled={loading}
               className="btn btn-primary w-full flex justify-center items-center gap-2" 
               style={{ padding: '1rem' }}
