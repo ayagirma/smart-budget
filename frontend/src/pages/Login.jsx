@@ -24,7 +24,7 @@ const Login = () => {
     try {
       if (viewMode === 'forgot') {
         const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
-        setSuccessMessage(data.message);
+        setSuccessMessage(data.message + (data.token ? ` [DEV ONLY] Your reset code is: ${data.token}` : ''));
         setViewMode('reset');
         return;
       }

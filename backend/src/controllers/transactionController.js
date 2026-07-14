@@ -27,7 +27,7 @@ export const getTransactions = async (req, res) => {
 // @access  Private
 export const addTransaction = async (req, res) => {
   try {
-    const { amount, type, description, date, category_id } = req.body;
+    const { amount, type, description, date, category_id, institution_name, account_name } = req.body;
     const userId = req.user.id;
 
     if (amount === undefined || !type || !date) {
@@ -39,8 +39,8 @@ export const addTransaction = async (req, res) => {
     }
 
     const newTransaction = await query(
-      'INSERT INTO transactions (user_id, category_id, amount, type, description, date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [userId, category_id || null, amount, type, description, date]
+      'INSERT INTO transactions (user_id, category_id, amount, type, description, date, institution_name, account_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [userId, category_id || null, amount, type, description, date, institution_name || 'Manual', account_name || 'Cash']
     );
 
     res.status(201).json(newTransaction.rows[0]);
@@ -95,7 +95,7 @@ export const getDashboardSummary = async (req, res) => {
 export const updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, description, date, category_id } = req.body;
+    const { amount, type, description, date, category_id, institution_name, account_name } = req.body;
     const userId = req.user.id;
 
     if (amount === undefined || !type || !date) {
@@ -107,8 +107,8 @@ export const updateTransaction = async (req, res) => {
     }
 
     const updatedTransaction = await query(
-      'UPDATE transactions SET amount = $1, type = $2, description = $3, date = $4, category_id = $5 WHERE id = $6 AND user_id = $7 RETURNING *',
-      [amount, type, description, date, category_id || null, id, userId]
+      'UPDATE transactions SET amount = $1, type = $2, description = $3, date = $4, category_id = $5, institution_name = $6, account_name = $7 WHERE id = $8 AND user_id = $9 RETURNING *',
+      [amount, type, description, date, category_id || null, institution_name || 'Manual', account_name || 'Cash', id, userId]
     );
 
     if (updatedTransaction.rows.length === 0) {
@@ -185,10 +185,12 @@ export const uploadCsvTransactions = async (req, res) => {
       }
 
       const categoryId = await autoCategorize(userId, t.description);
+      const bankName = t.institution_name || 'CSV Upload';
+      const accName = t.account_name || 'Checking';
 
       await query(
-        'INSERT INTO transactions (user_id, category_id, amount, type, description, date) VALUES ($1, $2, $3, $4, $5, $6)',
-        [userId, categoryId, absAmount, type, t.description, dateStr]
+        'INSERT INTO transactions (user_id, category_id, amount, type, description, date, institution_name, account_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [userId, categoryId, absAmount, type, t.description, dateStr, bankName, accName]
       );
       inserted++;
     }

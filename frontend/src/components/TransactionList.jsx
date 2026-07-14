@@ -51,8 +51,22 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
               </div>
               <div>
                 <p style={{ fontWeight: '600', margin: 0 }}>{transaction.category_name || 'Uncategorized'}</p>
-                <p style={{ fontSize: '0.875rem', margin: 0 }} className="text-secondary">
-                  {transaction.description ? `${transaction.description} • ` : ''}{date}
+                <p style={{ fontSize: '0.875rem', margin: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem' }} className="text-secondary">
+                  <span>{transaction.description ? `${transaction.description} • ` : ''}{date}</span>
+                  {(transaction.institution_name || transaction.account_name) && (
+                    <span style={{ 
+                      marginLeft: '0.5rem', 
+                      padding: '0.1rem 0.4rem', 
+                      background: 'rgba(255, 255, 255, 0.05)', 
+                      borderRadius: 'var(--radius-sm)', 
+                      fontSize: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-secondary)',
+                      display: 'inline-block'
+                    }}>
+                      {transaction.institution_name || 'Manual'} ({transaction.account_name || 'Cash'})
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

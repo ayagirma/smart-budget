@@ -6,7 +6,7 @@ import './Layout.css';
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { categories, transactions, budgets, bills, loading, logout, fetchDashboardData } = useApp();
+  const { categories, transactions, budgets, bills, loading, logout, fetchDashboardData, bankAccounts } = useApp();
 
   const handleLogout = () => {
     logout();
@@ -54,7 +54,7 @@ const Layout = () => {
           {loading ? (
             <div className="flex items-center justify-center" style={{ height: '60vh' }}>Loading...</div>
           ) : (
-            <Outlet context={{ categories, transactions, budgets, bills, fetchDashboardData }} />
+            <Outlet context={{ categories, transactions, budgets, bills, fetchDashboardData, bankAccounts }} />
           )}
         </div>
       </main>

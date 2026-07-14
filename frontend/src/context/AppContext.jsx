@@ -23,6 +23,7 @@ export const AppProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [bills, setBills] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = useCallback(async (authToken) => {
@@ -36,17 +37,19 @@ export const AppProvider = ({ children }) => {
       const config = {
         headers: { Authorization: `Bearer ${activeToken}` }
       };
-      const [catRes, transRes, budgetRes, billRes] = await Promise.all([
+      const [catRes, transRes, budgetRes, billRes, bankAccountsRes] = await Promise.all([
         axios.get('http://localhost:5000/api/categories', config),
         axios.get('http://localhost:5000/api/transactions', config),
         axios.get('http://localhost:5000/api/budgets', config),
-        axios.get('http://localhost:5000/api/bills', config)
+        axios.get('http://localhost:5000/api/bills', config),
+        axios.get('http://localhost:5000/api/plaid/accounts', config).catch(() => ({ data: [] }))
       ]);
       
       setCategories(catRes.data);
       setTransactions(transRes.data);
       setBudgets(budgetRes.data);
       setBills(billRes.data);
+      setBankAccounts(bankAccountsRes.data);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -86,6 +89,7 @@ export const AppProvider = ({ children }) => {
     setTransactions([]);
     setBudgets([]);
     setBills([]);
+    setBankAccounts([]);
   };
 
   const updateUser = (updates) => {
@@ -127,6 +131,7 @@ export const AppProvider = ({ children }) => {
       transactions,
       budgets,
       bills,
+      bankAccounts,
       loading,
       login,
       logout,

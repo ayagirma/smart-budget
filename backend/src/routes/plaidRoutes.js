@@ -24,13 +24,21 @@ const client = new PlaidApi(configuration);
 // Create Link Token
 router.post('/create_link_token', protect, async (req, res) => {
   try {
+    const supportedCountries = ['US', 'CA', 'GB', 'IE', 'FR', 'ES', 'NL', 'DE', 'BE', 'IT', 'PL', 'SE'];
+    let clientCountry = req.body.countryCode?.toUpperCase();
+    if (!supportedCountries.includes(clientCountry)) {
+      clientCountry = 'US';
+    }
+
+    const countryCodes = clientCountry === 'US' ? ['US'] : [clientCountry, 'US'];
+
     const request = {
       user: {
         client_user_id: req.user.id.toString(),
       },
       client_name: 'Budget App',
       products: ['transactions'],
-      country_codes: ['US'],
+      country_codes: countryCodes,
       language: 'en',
     };
     const createTokenResponse = await client.linkTokenCreate(request);
@@ -59,7 +67,7 @@ router.post('/set_access_token', protect, async (req, res) => {
     if (institutionId) {
       const instResponse = await client.institutionsGetById({
         institution_id: institutionId,
-        country_codes: ['US'],
+        country_codes: ['US', 'CA', 'GB', 'IE', 'FR', 'ES', 'NL', 'DE', 'BE', 'IT', 'PL', 'SE'],
       });
       institutionName = instResponse.data.institution.name;
     }
@@ -79,6 +87,50 @@ router.post('/set_access_token', protect, async (req, res) => {
   }
 });
 
+// Get linked accounts and balances
+router.get('/accounts', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { rows } = await query('SELECT * FROM plaid_items WHERE user_id = $1', [userId]);
+    
+    if (rows.length === 0) {
+      return res.json([]);
+    }
+
+    const allAccounts = [];
+
+    for (const item of rows) {
+      try {
+        const response = await client.accountsBalanceGet({
+          access_token: item.access_token,
+        });
+        
+        const accounts = response.data.accounts.map(acc => ({
+          id: acc.account_id,
+          name: acc.name,
+          officialName: acc.official_name,
+          type: acc.type,
+          subtype: acc.subtype,
+          balance: acc.balances.current,
+          availableBalance: acc.balances.available,
+          limit: acc.balances.limit,
+          currency: acc.balances.iso_currency_code,
+          institutionName: item.institution_name,
+        }));
+        
+        allAccounts.push(...accounts);
+      } catch (err) {
+        console.error(`Error fetching balance for item ${item.id}:`, err.response?.data || err);
+      }
+    }
+
+    res.json(allAccounts);
+  } catch (error) {
+    console.error('Error fetching accounts:', error.response?.data || error);
+    res.status(500).json({ error: 'Failed to fetch accounts' });
+  }
+});
+
 // Sync transactions manually
 router.post('/sync', protect, async (req, res) => {
   try {
@@ -93,7 +145,6 @@ router.post('/sync', protect, async (req, res) => {
 
     let totalSynced = 0;
 
-    // A simplified transaction sync (usually you'd use Plaid's /transactions/sync endpoint)
     // We'll use /transactions/get for simplicity here to get the last 30 days
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -103,6 +154,13 @@ router.post('/sync', protect, async (req, res) => {
     const end_date = endDate.toISOString().split('T')[0];
 
     for (const item of rows) {
+      // Fetch accounts first to resolve account_id to name
+      const accountsResponse = await client.accountsGet({ access_token: item.access_token });
+      const accountsMap = {};
+      accountsResponse.data.accounts.forEach(acc => {
+        accountsMap[acc.account_id] = acc.name;
+      });
+
       const response = await client.transactionsGet({
         access_token: item.access_token,
         start_date,
@@ -115,16 +173,19 @@ router.post('/sync', protect, async (req, res) => {
         const plaidTxId = t.transaction_id;
         const type = t.amount < 0 ? 'income' : 'expense';
         const amount = Math.abs(t.amount);
+        const accountName = accountsMap[t.account_id] || 'Checking';
         
         // Auto-categorize
         const categoryId = await autoCategorize(userId, t.name);
         
         const result = await query(
-          `INSERT INTO transactions (user_id, category_id, amount, type, description, date, plaid_transaction_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (plaid_transaction_id) DO NOTHING
+          `INSERT INTO transactions (user_id, category_id, amount, type, description, date, plaid_transaction_id, institution_name, account_name)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (plaid_transaction_id) DO UPDATE SET
+             institution_name = EXCLUDED.institution_name,
+             account_name = EXCLUDED.account_name
            RETURNING id`,
-          [userId, categoryId, amount, type, t.name, t.date, plaidTxId]
+          [userId, categoryId, amount, type, t.name, t.date, plaidTxId, item.institution_name, accountName]
         );
         
         if (result.rowCount > 0) {

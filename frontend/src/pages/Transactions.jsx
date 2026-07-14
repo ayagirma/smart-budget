@@ -9,14 +9,22 @@ import CsvUpload from '../components/CsvUpload';
 import RulesManager from '../components/RulesManager';
 
 const Transactions = () => {
-  const { transactions, categories, fetchDashboardData } = useOutletContext();
+  const { transactions, categories, fetchDashboardData, bankAccounts } = useOutletContext();
   
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   
-  const [newTransaction, setNewTransaction] = useState({ description: '', amount: '', type: 'expense', category: '', date: new Date().toISOString().split('T')[0] });
+  const [newTransaction, setNewTransaction] = useState({ 
+    description: '', 
+    amount: '', 
+    type: 'expense', 
+    category: '', 
+    date: new Date().toISOString().split('T')[0],
+    institution_name: 'Manual',
+    account_name: 'Cash'
+  });
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryClassification, setNewCategoryClassification] = useState('want');
 
@@ -26,6 +34,18 @@ const Transactions = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [modalNotification, setModalNotification] = useState(null); // { type: 'success' | 'error' | 'confirm', message: string, onConfirm?: () => void }
+
+  const distinctBanks = useMemo(() => {
+    const banks = new Set(['Manual', 'Chase', 'Wells Fargo', 'Bank of America', 'Citi', 'Capital One']);
+    if (bankAccounts && bankAccounts.length > 0) {
+      bankAccounts.forEach(acc => {
+        if (acc.institutionName) {
+          banks.add(acc.institutionName);
+        }
+      });
+    }
+    return Array.from(banks);
+  }, [bankAccounts]);
 
   const showModalAlert = (message, type = 'success') => {
     setModalNotification({ message, type });
@@ -49,7 +69,15 @@ const Transactions = () => {
 
   const openAddModal = () => {
     setEditingTransaction(null);
-    setNewTransaction({ description: '', amount: '', type: 'expense', category: '', date: new Date().toISOString().split('T')[0] });
+    setNewTransaction({ 
+      description: '', 
+      amount: '', 
+      type: 'expense', 
+      category: '', 
+      date: new Date().toISOString().split('T')[0],
+      institution_name: 'Manual',
+      account_name: 'Cash'
+    });
     setNewCategoryName('');
     setNewCategoryClassification('want');
     setShowAddTransaction(true);
@@ -62,7 +90,9 @@ const Transactions = () => {
       amount: transaction.amount,
       type: transaction.type,
       category: transaction.category_id || '',
-      date: new Date(transaction.date).toISOString().split('T')[0]
+      date: new Date(transaction.date).toISOString().split('T')[0],
+      institution_name: transaction.institution_name || 'Manual',
+      account_name: transaction.account_name || 'Cash'
     });
     setNewCategoryName('');
     setNewCategoryClassification('want');
@@ -117,7 +147,15 @@ const Transactions = () => {
       
       setShowAddTransaction(false);
       setEditingTransaction(null);
-      setNewTransaction({ description: '', amount: '', type: 'expense', category: '', date: new Date().toISOString().split('T')[0] });
+      setNewTransaction({ 
+        description: '', 
+        amount: '', 
+        type: 'expense', 
+        category: '', 
+        date: new Date().toISOString().split('T')[0],
+        institution_name: 'Manual',
+        account_name: 'Cash'
+      });
       setNewCategoryName('');
       setNewCategoryClassification('want');
       fetchDashboardData();
@@ -343,7 +381,55 @@ const Transactions = () => {
                   </div>
                 </div>
               )}
-              <div className="form-group">
+
+              <div className="form-group animate-fade-in" style={{ marginTop: '1rem' }}>
+                <label className="form-label">Bank/Source (Institution)</label>
+                <select 
+                  className="form-input" 
+                  value={distinctBanks.includes(newTransaction.institution_name) ? newTransaction.institution_name : (newTransaction.institution_name === '' ? 'Manual' : 'new_bank')} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === 'new_bank') {
+                      setNewTransaction({...newTransaction, institution_name: ''});
+                    } else {
+                      setNewTransaction({...newTransaction, institution_name: val});
+                    }
+                  }}
+                >
+                  {distinctBanks.map(bank => (
+                    <option key={bank} value={bank}>{bank}</option>
+                  ))}
+                  <option value="new_bank">+ Add custom bank...</option>
+                </select>
+              </div>
+
+              {!distinctBanks.includes(newTransaction.institution_name) && (
+                <div className="form-group animate-fade-in" style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <label className="form-label">Custom Bank Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    required 
+                    value={newTransaction.institution_name}
+                    onChange={e => setNewTransaction({...newTransaction, institution_name: e.target.value})} 
+                    placeholder="e.g. Fidelity, Ally..." 
+                  />
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label">Account Name</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  required 
+                  value={newTransaction.account_name} 
+                  onChange={e => setNewTransaction({...newTransaction, account_name: e.target.value})} 
+                  placeholder="e.g. Checking, Savings, Credit Card" 
+                />
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label className="form-label">Description</label>
                 <input type="text" className="form-input" required value={newTransaction.description} onChange={e => setNewTransaction({...newTransaction, description: e.target.value})} placeholder="What was this for?" />
               </div>
