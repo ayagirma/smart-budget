@@ -63,34 +63,41 @@ const PlaidLinkButton = ({ onSuccessCallback }) => {
   });
 
   return (
-    <div className="flex items-center gap-2">
-      <select
-        className="form-input"
-        style={{ width: 'auto', padding: '0.4rem 1.75rem 0.4rem 0.75rem', fontSize: '0.875rem', margin: 0, height: '42px' }}
-        value={country}
-        onChange={e => handleCountryChange(e.target.value)}
-      >
-        <option value="US">🇺🇸 United States</option>
-        <option value="CA">🇨🇦 Canada</option>
-        <option value="GB">🇬🇧 United Kingdom</option>
-        <option value="IE">🇮🇪 Ireland</option>
-        <option value="FR">🇫🇷 France</option>
-        <option value="ES">🇪🇸 Spain</option>
-        <option value="NL">🇳🇱 Netherlands</option>
-        <option value="DE">🇩🇪 Germany</option>
-        <option value="BE">🇧🇪 Belgium</option>
-        <option value="IT">🇮🇹 Italy</option>
-        <option value="PL">🇵🇱 Poland</option>
-        <option value="SE">🇸🇪 Sweden</option>
-      </select>
-      <button 
-        className="btn btn-secondary flex items-center gap-2" 
-        onClick={() => open()} 
-        disabled={!ready || !token}
-        style={{ whiteSpace: 'nowrap', height: '42px' }}
-      >
-        <Link2 size={18} /> {token ? 'Link Bank' : 'Loading Plaid...'}
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="flex items-center gap-2">
+        <select
+          className="form-input"
+          style={{ width: 'auto', padding: '0.4rem 1.75rem 0.4rem 0.75rem', fontSize: '0.875rem', margin: 0, height: '42px' }}
+          value={country}
+          onChange={e => handleCountryChange(e.target.value)}
+        >
+          <option value="US">🇺🇸 United States</option>
+          <option value="CA">🇨🇦 Canada</option>
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="IE">🇮🇪 Ireland</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="ES">🇪🇸 Spain</option>
+          <option value="NL">🇳🇱 Netherlands</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="BE">🇧🇪 Belgium</option>
+          <option value="IT">🇮🇹 Italy</option>
+          <option value="PL">🇵🇱 Poland</option>
+          <option value="SE">🇸🇪 Sweden</option>
+        </select>
+        <button 
+          className="btn btn-secondary flex items-center gap-2" 
+          onClick={() => open()} 
+          disabled={!ready || !token}
+          style={{ whiteSpace: 'nowrap', height: '42px' }}
+        >
+          <Link2 size={18} /> {token ? 'Link Bank' : 'Loading Plaid...'}
+        </button>
+      </div>
+      {token && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', maxWidth: '350px', display: 'block', lineHeight: '1.4' }}>
+          💡 <strong>Sandbox Note:</strong> Real phone SMS does not work in Sandbox. Use test number <code>415-555-0010</code> (leave <code>+1</code> as is) and verification code <code>123456</code> to authenticate.
+        </span>
+      )}
     </div>
   );
 };
