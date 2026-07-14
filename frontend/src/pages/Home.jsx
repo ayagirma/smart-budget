@@ -142,11 +142,17 @@ const Home = () => {
 
   const computedBankBalances = useMemo(() => {
     if (bankAccounts && bankAccounts.length > 0) {
-      return bankAccounts.map(acc => ({
-        name: acc.name,
-        institutionName: acc.institutionName,
-        balance: acc.balance
-      }));
+      return bankAccounts
+        .filter(acc => {
+          const nameLower = (acc.name || '').toLowerCase();
+          const subtypeLower = (acc.subtype || '').toLowerCase();
+          return nameLower.includes('checking') || subtypeLower === 'checking';
+        })
+        .map(acc => ({
+          name: acc.name,
+          institutionName: acc.institutionName,
+          balance: acc.balance
+        }));
     }
     
     // Fallback: calculate balance from transaction history
