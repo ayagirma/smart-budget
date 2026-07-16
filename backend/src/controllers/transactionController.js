@@ -174,10 +174,13 @@ export const uploadCsvTransactions = async (req, res) => {
       const absAmount = Math.abs(parsedAmount);
       const dateStr = parsedDate.toISOString().split('T')[0];
 
+      const bankName = t.institution_name || 'CSV Upload';
+      const accName = t.account_name || 'Checking';
+
       // Check if identical transaction already exists for this user
       const existing = await query(
-        'SELECT id FROM transactions WHERE user_id = $1 AND date = $2 AND amount = $3 AND type = $4 AND description = $5',
-        [userId, dateStr, absAmount, type, t.description]
+        'SELECT id FROM transactions WHERE user_id = $1 AND date = $2 AND amount = $3 AND type = $4 AND description = $5 AND COALESCE(institution_name, \'\') = $6 AND COALESCE(account_name, \'\') = $7',
+        [userId, dateStr, absAmount, type, t.description, bankName, accName]
       );
 
       if (existing.rows.length > 0) {
@@ -185,8 +188,6 @@ export const uploadCsvTransactions = async (req, res) => {
       }
 
       const categoryId = await autoCategorize(userId, t.description);
-      const bankName = t.institution_name || 'CSV Upload';
-      const accName = t.account_name || 'Checking';
 
       await query(
         'INSERT INTO transactions (user_id, category_id, amount, type, description, date, institution_name, account_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',

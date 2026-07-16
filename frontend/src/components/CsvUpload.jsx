@@ -9,6 +9,8 @@ const CsvUpload = ({ onUploadSuccess }) => {
   const [csvData, setCsvData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [mapping, setMapping] = useState({ date: '', amount: '', description: '' });
+  const [institutionName, setInstitutionName] = useState('CSV Upload');
+  const [accountName, setAccountName] = useState('Checking');
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -34,7 +36,9 @@ const CsvUpload = ({ onUploadSuccess }) => {
       const mappedData = csvData.map(row => ({
         date: row[mapping.date],
         amount: row[mapping.amount],
-        description: row[mapping.description]
+        description: row[mapping.description],
+        institution_name: institutionName || 'CSV Upload',
+        account_name: accountName || 'Checking'
       }));
 
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
@@ -42,6 +46,8 @@ const CsvUpload = ({ onUploadSuccess }) => {
       
       setShowModal(false);
       setCsvData([]);
+      setInstitutionName('CSV Upload');
+      setAccountName('Checking');
       if (onUploadSuccess) onUploadSuccess();
     } catch (err) {
       console.error('Error uploading CSV:', err);
@@ -88,9 +94,33 @@ const CsvUpload = ({ onUploadSuccess }) => {
               </select>
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Bank / Institution Name</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                value={institutionName} 
+                onChange={e => setInstitutionName(e.target.value)} 
+                placeholder="e.g. Chase, Wells Fargo"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Account Name / Type</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                value={accountName} 
+                onChange={e => setAccountName(e.target.value)} 
+                placeholder="e.g. Checking, Savings"
+                required
+              />
+            </div>
+
             <div className="flex justify-between mt-4">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleUpload} disabled={!mapping.date || !mapping.amount || !mapping.description}>Upload Data</button>
+              <button className="btn btn-primary" onClick={handleUpload} disabled={!mapping.date || !mapping.amount || !mapping.description || !institutionName || !accountName}>Upload Data</button>
             </div>
           </div>
         </div>,

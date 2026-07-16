@@ -43,6 +43,21 @@ const Home = () => {
   const [selectedMonth, setSelectedMonth] = useState(defaults.month);
   const [selectedYear, setSelectedYear] = useState(defaults.year);
   const [hasChanged, setHasChanged] = useState(false);
+  const [accountTypeFilter, setAccountTypeFilter] = useState('all');
+
+  const filteredTransactions = useMemo(() => {
+    if (accountTypeFilter === 'all') return transactions;
+    return transactions.filter(t => {
+      const accName = (t.account_name || '').toLowerCase();
+      if (accountTypeFilter === 'checking') {
+        return accName.includes('checking') || (!accName.includes('saving') && accName !== 'savings');
+      }
+      if (accountTypeFilter === 'savings') {
+        return accName.includes('saving') || accName === 'savings';
+      }
+      return true;
+    });
+  }, [transactions, accountTypeFilter]);
 
   useEffect(() => {
     if (transactions.length > 0 && !hasChanged) {
@@ -104,11 +119,11 @@ const Home = () => {
 
   // Filter selected month transactions
   const selectedMonthTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    return filteredTransactions.filter(t => {
       const d = new Date(t.date);
       return (d.getUTCMonth() + 1) === Number(selectedMonth) && d.getUTCFullYear() === Number(selectedYear);
     });
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [filteredTransactions, selectedMonth, selectedYear]);
 
   // Calculate expenses dynamically to check for budget depletion
   const totalIncome = useMemo(() => {
@@ -121,10 +136,10 @@ const Home = () => {
 
   // Overall total balance (cumulative all-time net worth)
   const balance = useMemo(() => {
-    const overallIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
-    const overallExpense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
+    const overallIncome = filteredTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
+    const overallExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
     return overallIncome - overallExpense;
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const bankExpenses = useMemo(() => {
     const groups = {};
@@ -142,35 +157,34 @@ const Home = () => {
 
   const computedBankBalances = useMemo(() => {
     if (bankAccounts && bankAccounts.length > 0) {
-      return bankAccounts
-        .filter(acc => {
-          const nameLower = (acc.name || '').toLowerCase();
-          const subtypeLower = (acc.subtype || '').toLowerCase();
-          return nameLower.includes('checking') || subtypeLower === 'checking';
-        })
-        .map(acc => ({
-          name: acc.name,
-          institutionName: acc.institutionName,
-          balance: acc.balance
-        }));
+      return bankAccounts.map(acc => ({
+        name: acc.name,
+        institutionName: acc.institutionName,
+        balance: acc.balance
+      }));
     }
     
     // Fallback: calculate balance from transaction history
     const balances = {};
     transactions.forEach(t => {
       const bank = t.institution_name || 'Manual';
+      const acc = t.account_name || 'Checking';
+      const key = `${bank} - ${acc}`;
       const amount = Number(t.amount);
       if (t.type === 'income') {
-        balances[bank] = (balances[bank] || 0) + amount;
+        balances[key] = (balances[key] || 0) + amount;
       } else {
-        balances[bank] = (balances[bank] || 0) - amount;
+        balances[key] = (balances[key] || 0) - amount;
       }
     });
-    return Object.keys(balances).map(bank => ({
-      name: 'Checking',
-      institutionName: bank,
-      balance: balances[bank]
-    }));
+    return Object.keys(balances).map(key => {
+      const [bank, acc] = key.split(' - ');
+      return {
+        name: acc,
+        institutionName: bank,
+        balance: balances[key]
+      };
+    });
   }, [bankAccounts, transactions]);
 
   let needsGoalPct = 0.5;
@@ -265,6 +279,16 @@ const Home = () => {
         </div>
         
         <div className="flex gap-2">
+          <select 
+            className="form-input" 
+            style={{ width: 'auto', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.875rem' }}
+            value={accountTypeFilter}
+            onChange={e => setAccountTypeFilter(e.target.value)}
+          >
+            <option value="all">All Accounts</option>
+            <option value="checking">Checking Only</option>
+            <option value="savings">Savings Only</option>
+          </select>
           <select 
             className="form-input" 
             style={{ width: 'auto', padding: '0.4rem 1.5rem 0.4rem 0.75rem', fontSize: '0.875rem' }}
