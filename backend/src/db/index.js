@@ -7,6 +7,12 @@ const { Pool } = pg;
 
 const dbUrl = process.env.DATABASE_URL || process.env.Database_URL;
 
+if (dbUrl) {
+  console.log('Connecting to PostgreSQL using DATABASE_URL...');
+} else {
+  console.log(`Connecting to PostgreSQL at host: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}...`);
+}
+
 const poolConfig = dbUrl 
   ? {
       connectionString: dbUrl,
