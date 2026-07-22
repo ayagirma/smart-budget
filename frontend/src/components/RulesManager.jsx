@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { Trash2, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const RulesManager = ({ onClose, categories, onRulesApplied }) => {
   const [rules, setRules] = useState([]);
@@ -16,7 +17,7 @@ const RulesManager = ({ onClose, categories, onRulesApplied }) => {
   const fetchRules = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      const { data } = await axios.get('http://localhost:5000/api/rules', config);
+      const { data } = await axios.get(`${API_BASE_URL}/api/rules`, config);
       setRules(data);
     } catch (error) {
       console.error('Error fetching rules:', error);
@@ -39,7 +40,7 @@ const RulesManager = ({ onClose, categories, onRulesApplied }) => {
       try {
         const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
         const { data } = await axios.get(
-          `http://localhost:5000/api/rules/preview?keyword=${encodeURIComponent(keyword)}&match_type=${matchType}`,
+          `${API_BASE_URL}/api/rules/preview?keyword=${encodeURIComponent(keyword)}&match_type=${matchType}`,
           config
         );
         setPreviewMatches(data);
@@ -57,7 +58,7 @@ const RulesManager = ({ onClose, categories, onRulesApplied }) => {
     e.preventDefault();
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.post('http://localhost:5000/api/rules', { keyword, category_id: categoryId, match_type: matchType }, config);
+      await axios.post(`${API_BASE_URL}/api/rules`, { keyword, category_id: categoryId, match_type: matchType }, config);
       setKeyword('');
       setCategoryId('');
       fetchRules();
@@ -69,7 +70,7 @@ const RulesManager = ({ onClose, categories, onRulesApplied }) => {
   const handleDeleteRule = async (id) => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.delete(`http://localhost:5000/api/rules/${id}`, config);
+      await axios.delete(`${API_BASE_URL}/api/rules/${id}`, config);
       fetchRules();
     } catch (error) {
       console.error('Error deleting rule:', error);
@@ -79,7 +80,7 @@ const RulesManager = ({ onClose, categories, onRulesApplied }) => {
   const handleApplyRules = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      const { data } = await axios.post('http://localhost:5000/api/rules/apply', {}, config);
+      const { data } = await axios.post(`${API_BASE_URL}/api/rules/apply`, {}, config);
       alert(data.message);
       if (onRulesApplied) {
         onRulesApplied();

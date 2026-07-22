@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import axios from 'axios';
-import { Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const Home = () => {
-  const { categories, transactions, bills, user, token, updateUser, bankAccounts } = useApp();
+  const { categories, transactions, bills, user, token, updateUser, bankAccounts, debts } = useApp();
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
 
   const budgetRule = user?.budgetRule || '50-30-20';
@@ -223,7 +224,7 @@ const Home = () => {
     
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put('http://localhost:5000/api/users/onboarding', {
+      await axios.put(`${API_BASE_URL}/api/users/onboarding`, {
         monthlyIncome,
         budgetRule: newRule
       }, config);
@@ -346,6 +347,18 @@ const Home = () => {
           <div>
             <p className="form-label">Total Expenses</p>
             <h2 style={{ margin: 0, fontSize: '2rem' }}>${totalExpense.toFixed(2)}</h2>
+          </div>
+        </div>
+
+        <div className="card flex items-center gap-4">
+          <div style={{ padding: '1rem', background: 'rgba(168, 85, 247, 0.15)', borderRadius: 'var(--radius-md)', color: 'var(--primary)' }}>
+            <ShieldCheck size={32} />
+          </div>
+          <div>
+            <p className="form-label">Estimated Net Worth</p>
+            <h2 style={{ margin: 0, fontSize: '2rem', color: (balance - (debts?.reduce((acc, d) => acc + Number(d.balance), 0) || 24100)) >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>
+              ${(balance - (debts?.reduce((acc, d) => acc + Number(d.balance), 0) || 24100)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </h2>
           </div>
         </div>
       </div>

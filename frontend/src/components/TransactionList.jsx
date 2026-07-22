@@ -57,7 +57,7 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
                     <span style={{ 
                       marginLeft: '0.5rem', 
                       padding: '0.1rem 0.4rem', 
-                      background: 'rgba(255, 255, 255, 0.05)', 
+                      background: 'var(--bg-subtle)', 
                       borderRadius: 'var(--radius-sm)', 
                       fontSize: '0.75rem',
                       border: '1px solid var(--border-color)',
@@ -107,9 +107,8 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
             className="btn btn-secondary" 
             onClick={() => setVisibleCount(prev => prev + 15)}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-subtle)',
               border: '1px solid var(--border-color)',
-              backdropFilter: 'blur(10px)',
               padding: '0.75rem 1.5rem',
               width: '100%',
               maxWidth: '300px',
@@ -117,11 +116,11 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
               marginTop: '0.5rem'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
               e.currentTarget.style.borderColor = 'var(--primary)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.background = 'var(--bg-subtle)';
               e.currentTarget.style.borderColor = 'var(--border-color)';
             }}
           >

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import { PieChart, Trash2, Target, AlertTriangle, Edit2, PlusCircle, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const Budgets = () => {
   const { categories, transactions, budgets, fetchDashboardData } = useOutletContext();
@@ -39,7 +40,7 @@ const Budgets = () => {
     if (!window.confirm('Are you sure you want to delete this custom category?')) return;
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.delete(`http://localhost:5000/api/categories/${id}`, config);
+      await axios.delete(`${API_BASE_URL}/api/categories/${id}`, config);
       fetchDashboardData();
     } catch (err) {
       console.error(err);
@@ -52,7 +53,7 @@ const Budgets = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
       
-      await axios.post('http://localhost:5000/api/budgets', {
+      await axios.post(`${API_BASE_URL}/api/budgets`, {
         category_id: Number(editingBudget.category_id),
         amount: Number(editingBudget.amount),
         month: currentMonth,
@@ -72,7 +73,7 @@ const Budgets = () => {
     if (!window.confirm('Are you sure you want to remove this budget limit?')) return;
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.delete(`http://localhost:5000/api/budgets/${id}`, config);
+      await axios.delete(`${API_BASE_URL}/api/budgets/${id}`, config);
       fetchDashboardData();
     } catch (err) {
       console.error(err);
@@ -131,7 +132,7 @@ const Budgets = () => {
 
               // Classification colors
               let classColor = 'var(--text-secondary)';
-              let classBg = 'rgba(255, 255, 255, 0.05)';
+              let classBg = 'var(--bg-subtle)';
               if (cat.classification === 'need') {
                 classColor = 'var(--success)';
                 classBg = 'rgba(16, 185, 129, 0.1)';
@@ -184,7 +185,7 @@ const Budgets = () => {
                       </div>
 
                       {/* Progress Bar Track */}
-                      <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
+                      <div style={{ width: '100%', height: '8px', background: 'var(--bg-subtle)', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
                         <div 
                           style={{ 
                             width: `${Math.min(percent, 100)}%`, 

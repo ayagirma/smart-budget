@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Mail, Lock, LogIn, UserPlus, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { API_BASE_URL } from '../config';
 
 const Login = () => {
   const { login } = useApp();
@@ -23,14 +24,14 @@ const Login = () => {
 
     try {
       if (viewMode === 'forgot') {
-        const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+        const { data } = await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
         setSuccessMessage(data.message + (data.token ? ` [DEV ONLY] Your reset code is: ${data.token}` : ''));
         setViewMode('reset');
         return;
       }
 
       if (viewMode === 'reset') {
-        await axios.post('http://localhost:5000/api/auth/reset-password', { email, token: resetToken, newPassword });
+        await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { email, token: resetToken, newPassword });
         setSuccessMessage('Password reset successfully! You can now sign in.');
         setViewMode('login');
         // Reset inputs
@@ -48,7 +49,7 @@ const Login = () => {
         password 
       };
       
-      const { data } = await axios.post(`http://localhost:5000${endpoint}`, payload);
+      const { data } = await axios.post(`${API_BASE_URL}${endpoint}`, payload);
       
       const userObj = data.user || data;
       login(userObj);

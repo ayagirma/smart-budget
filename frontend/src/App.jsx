@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import Transactions from './pages/Transactions';
 import Budgets from './pages/Budgets';
 import Analytics from './pages/Analytics';
+import Debts from './pages/Debts';
+import Subscriptions from './pages/Subscriptions';
 import Onboarding from './pages/Onboarding';
 import Layout from './components/Layout';
 import { useApp } from './context/AppContext';
@@ -35,6 +37,8 @@ function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/debts" element={<Debts />} />
+            <Route path="/subscriptions" element={<Subscriptions />} />
           </Route>
         ) : isAuthenticated && !onboardingCompleted ? (
           <Route path="*" element={<Navigate to="/onboarding" />} />

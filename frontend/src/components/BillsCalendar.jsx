@@ -4,6 +4,7 @@ import 'react-calendar/dist/Calendar.css';
 import axios from 'axios';
 import { Calendar as CalendarIcon, CheckCircle, Circle, Trash2 } from 'lucide-react';
 import './BillsCalendar.css'; 
+import { API_BASE_URL } from '../config';
 
 const BillsCalendar = ({ bills, fetchBills }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -11,7 +12,7 @@ const BillsCalendar = ({ bills, fetchBills }) => {
   const handleMarkPaid = async (bill) => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.put(`http://localhost:5000/api/bills/${bill.id}/paid`, { is_paid: !bill.is_paid }, config);
+      await axios.put(`${API_BASE_URL}/api/bills/${bill.id}/paid`, { is_paid: !bill.is_paid }, config);
       fetchBills();
     } catch (err) {
       console.error(err);
@@ -23,7 +24,7 @@ const BillsCalendar = ({ bills, fetchBills }) => {
     if (!window.confirm("Delete this bill?")) return;
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.delete(`http://localhost:5000/api/bills/${billId}`, config);
+      await axios.delete(`${API_BASE_URL}/api/bills/${billId}`, config);
       fetchBills();
     } catch (err) {
       console.error(err);

@@ -10,6 +10,12 @@ import billRoutes from "./routes/billRoutes.js";
 import plaidRoutes from "./routes/plaidRoutes.js";
 import ruleRoutes from "./routes/ruleRoutes.js";
 
+import debtRoutes from "./routes/debtRoutes.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import { initExtraTables } from "./db/init_extra_tables.js";
+import { initStripeSchema } from "./db/init_stripe_schema.js";
+
 dotenv.config();
 
 if (!process.env.JWT_SECRET) {
@@ -27,6 +33,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Initialize DB schemas
+initExtraTables();
+initStripeSchema();
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -36,11 +46,19 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/plaid", plaidRoutes);
 app.use("/api/rules", ruleRoutes);
+app.use("/api/debts", debtRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Budget App ApI is running");
+  res.send("Budget App API is running");
 });
 
-app.listen(5000, () => {
-  console.log("server running on port 5000");
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date() });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

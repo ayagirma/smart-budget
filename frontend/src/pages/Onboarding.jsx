@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, CheckCircle2, Target, TrendingUp, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { API_BASE_URL } from '../config';
 
 const Onboarding = () => {
   const { token, updateUser } = useApp();
@@ -45,7 +46,7 @@ const Onboarding = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      await axios.put('http://localhost:5000/api/users/onboarding', {
+      await axios.put(`${API_BASE_URL}/api/users/onboarding`, {
         monthlyIncome: Number(income),
         budgetRule: finalRule
       }, config);

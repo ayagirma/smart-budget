@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import Papa from 'papaparse';
 import axios from 'axios';
 import { Upload } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const CsvUpload = ({ onUploadSuccess }) => {
   const [showModal, setShowModal] = useState(false);
@@ -42,7 +43,7 @@ const CsvUpload = ({ onUploadSuccess }) => {
       }));
 
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.post('http://localhost:5000/api/transactions/upload_csv', { transactions: mappedData }, config);
+      await axios.post(`${API_BASE_URL}/api/transactions/upload_csv`, { transactions: mappedData }, config);
       
       setShowModal(false);
       setCsvData([]);

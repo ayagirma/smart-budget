@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const AppContext = createContext();
 
@@ -24,7 +25,20 @@ export const AppProvider = ({ children }) => {
   const [budgets, setBudgets] = useState([]);
   const [bills, setBills] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [debts, setDebts] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [planTier, setPlanTier] = useState('free');
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'dark');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', themeMode);
+    localStorage.setItem('themeMode', themeMode);
+  }, [themeMode]);
+
+  const toggleTheme = () => {
+    setThemeMode(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const fetchDashboardData = useCallback(async (authToken) => {
     const activeToken = authToken || token;
@@ -37,12 +51,15 @@ export const AppProvider = ({ children }) => {
       const config = {
         headers: { Authorization: `Bearer ${activeToken}` }
       };
-      const [catRes, transRes, budgetRes, billRes, bankAccountsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/categories', config),
-        axios.get('http://localhost:5000/api/transactions', config),
-        axios.get('http://localhost:5000/api/budgets', config),
-        axios.get('http://localhost:5000/api/bills', config),
-        axios.get('http://localhost:5000/api/plaid/accounts', config).catch(() => ({ data: [] }))
+      const [catRes, transRes, budgetRes, billRes, bankAccountsRes, debtsRes, subsRes, planRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/categories`, config),
+        axios.get(`${API_BASE_URL}/api/transactions`, config),
+        axios.get(`${API_BASE_URL}/api/budgets`, config),
+        axios.get(`${API_BASE_URL}/api/bills`, config),
+        axios.get(`${API_BASE_URL}/api/plaid/accounts`, config).catch(() => ({ data: [] })),
+        axios.get(`${API_BASE_URL}/api/debts`, config).catch(() => ({ data: [] })),
+        axios.get(`${API_BASE_URL}/api/subscriptions`, config).catch(() => ({ data: [] })),
+        axios.get(`${API_BASE_URL}/api/payments/status`, config).catch(() => ({ data: { planTier: 'free' } }))
       ]);
       
       setCategories(catRes.data);
@@ -50,6 +67,9 @@ export const AppProvider = ({ children }) => {
       setBudgets(budgetRes.data);
       setBills(billRes.data);
       setBankAccounts(bankAccountsRes.data);
+      setDebts(debtsRes.data);
+      setSubscriptions(subsRes.data);
+      setPlanTier(planRes.data.planTier || 'free');
       setLoading(false);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -90,6 +110,8 @@ export const AppProvider = ({ children }) => {
     setBudgets([]);
     setBills([]);
     setBankAccounts([]);
+    setDebts([]);
+    setSubscriptions([]);
   };
 
   const updateUser = (updates) => {
@@ -132,6 +154,13 @@ export const AppProvider = ({ children }) => {
       budgets,
       bills,
       bankAccounts,
+      debts,
+      subscriptions,
+      planTier,
+      isPro: planTier === 'pro' || user?.email?.toLowerCase() === 'ayagirma@gmail.com',
+      isAdmin: user?.email?.toLowerCase() === 'ayagirma@gmail.com',
+      themeMode,
+      toggleTheme,
       loading,
       login,
       logout,

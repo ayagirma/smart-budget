@@ -5,6 +5,7 @@ import axios from 'axios';
 import { CalendarPlus, Landmark, Car, LineChart, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
 import ChartsPanel from '../components/ChartsPanel';
 import BillsCalendar from '../components/BillsCalendar';
+import { API_BASE_URL } from '../config';
 
 const Analytics = () => {
   const { transactions, categories, budgets, bills, fetchDashboardData } = useOutletContext();
@@ -20,7 +21,7 @@ const Analytics = () => {
       setLoadingForecast(true);
       try {
         const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-        const { data } = await axios.get('http://localhost:5000/api/transactions/forecast', config);
+        const { data } = await axios.get(`${API_BASE_URL}/api/transactions/forecast`, config);
         setForecasts(data);
       } catch (err) {
         console.error('Error fetching forecasts:', err);
@@ -160,7 +161,7 @@ const Analytics = () => {
     e.preventDefault();
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.post('http://localhost:5000/api/bills', {
+      await axios.post(`${API_BASE_URL}/api/bills`, {
         title: newBill.title,
         amount: Number(newBill.amount),
         due_date: newBill.due_date
@@ -307,7 +308,7 @@ const Analytics = () => {
           </div>
 
           {/* Habit Insights */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-color)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
             <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
               Period Spending Habits:
             </h4>
@@ -528,7 +529,7 @@ const Analytics = () => {
                       const limit = f.budgetLimit;
                       
                       return (
-                        <div key={f.categoryId} style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
+                        <div key={f.categoryId} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
                           <div className="flex justify-between items-center" style={{ marginBottom: '0.5rem' }}>
                             <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: f.categoryColor || 'var(--primary)' }} />

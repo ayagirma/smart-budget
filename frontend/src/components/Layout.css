@@ -65,12 +65,13 @@
 
 .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-card-hover);
 }
 
 .nav-link.active {
   color: var(--primary);
-  background: rgba(168, 85, 247, 0.1);
+  background: var(--primary-light);
+  font-weight: 600;
 }
 
 /* Mobile Bottom Navigation */

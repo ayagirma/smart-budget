@@ -7,6 +7,7 @@ import TransactionList from '../components/TransactionList';
 import PlaidLinkButton from '../components/PlaidLinkButton';
 import CsvUpload from '../components/CsvUpload';
 import RulesManager from '../components/RulesManager';
+import { API_BASE_URL } from '../config';
 
 const Transactions = () => {
   const { transactions, categories, fetchDashboardData, bankAccounts } = useOutletContext();
@@ -58,7 +59,7 @@ const Transactions = () => {
   const handleSyncPlaid = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-      await axios.post('http://localhost:5000/api/plaid/sync', {}, config);
+      await axios.post(`${API_BASE_URL}/api/plaid/sync`, {}, config);
       fetchDashboardData();
       showModalAlert('Transactions synced successfully!');
     } catch (err) {
@@ -103,7 +104,7 @@ const Transactions = () => {
     showModalConfirm('Are you sure you want to delete this transaction?', async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-        await axios.delete(`http://localhost:5000/api/transactions/${id}`, config);
+        await axios.delete(`${API_BASE_URL}/api/transactions/${id}`, config);
         fetchDashboardData();
         showModalAlert('Transaction deleted successfully!');
       } catch (err) {
@@ -123,7 +124,7 @@ const Transactions = () => {
       let categoryId = newTransaction.category;
 
       if (categoryId === 'new_category') {
-        const catRes = await axios.post('http://localhost:5000/api/categories', {
+        const catRes = await axios.post(`${API_BASE_URL}/api/categories`, {
           name: newCategoryName,
           type: newTransaction.type,
           icon: 'tag',
@@ -140,9 +141,9 @@ const Transactions = () => {
       };
 
       if (editingTransaction) {
-        await axios.put(`http://localhost:5000/api/transactions/${editingTransaction.id}`, transactionPayload, config);
+        await axios.put(`${API_BASE_URL}/api/transactions/${editingTransaction.id}`, transactionPayload, config);
       } else {
-        await axios.post('http://localhost:5000/api/transactions', transactionPayload, config);
+        await axios.post(`${API_BASE_URL}/api/transactions`, transactionPayload, config);
       }
       
       setShowAddTransaction(false);
@@ -198,54 +199,48 @@ const Transactions = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4" style={{ position: 'relative' }}>
-        <h2>Transactions</h2>
-        <div className="actions-menu-container">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 700, margin: 0 }}>Transactions</h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>
+            Track, filter, import statement files, or sync connected bank accounts.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
           <button 
-            type="button"
-            className="btn btn-secondary actions-menu-trigger" 
-            style={{ width: '42px', height: '42px', padding: 0 }}
-            onClick={() => setShowActionsMenu(!showActionsMenu)}
-            aria-label="Toggle actions menu"
+            className="btn btn-secondary flex items-center gap-2" 
+            onClick={handleSyncPlaid}
+            title="Sync latest Plaid transactions"
           >
-            {showActionsMenu ? <X size={20} /> : <Menu size={20} />}
+            <RefreshCw size={16} /> Sync
           </button>
           
-          {showActionsMenu && (
-            <div 
-              style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'transparent' }} 
-              onClick={() => setShowActionsMenu(false)}
-            />
-          )}
+          <CsvUpload onUploadSuccess={fetchDashboardData} />
+          
+          <button 
+            className="btn btn-secondary flex items-center gap-2" 
+            onClick={() => setShowRulesModal(true)}
+          >
+            <Settings size={16} /> Rules
+          </button>
 
-          <div className={`transactions-actions ${showActionsMenu ? 'show' : ''}`} style={{ zIndex: 50 }}>
-            <PlaidLinkButton onSuccessCallback={() => { fetchDashboardData(); setShowActionsMenu(false); }} />
-            <button 
-              className="btn btn-secondary flex items-center gap-2" 
-              onClick={() => { handleSyncPlaid(); setShowActionsMenu(false); }}
-            >
-              <RefreshCw size={18} /> Sync
-            </button>
-            <CsvUpload onUploadSuccess={() => { fetchDashboardData(); setShowActionsMenu(false); }} />
-            <button 
-              className="btn btn-secondary flex items-center gap-2" 
-              onClick={() => { setShowRulesModal(true); setShowActionsMenu(false); }}
-            >
-              <Settings size={18} /> Rules
-            </button>
-            <button 
-              className="btn btn-primary flex items-center gap-2" 
-              onClick={() => { openAddModal(); setShowActionsMenu(false); }}
-            >
-              <Plus size={18} /> Add
-            </button>
-          </div>
+          <button 
+            className="btn btn-primary flex items-center gap-2" 
+            onClick={openAddModal}
+          >
+            <Plus size={16} /> Add Transaction
+          </button>
         </div>
       </div>
 
+      {/* Bank Link Banner */}
+      <PlaidLinkButton onSuccessCallback={fetchDashboardData} />
+
       {/* Search and Filters */}
       <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        <div className="filter-grid">
           <div>
             <label className="form-label" style={{ fontSize: '0.8rem' }}>Search</label>
             <input 

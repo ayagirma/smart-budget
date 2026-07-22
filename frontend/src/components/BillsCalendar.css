@@ -3,15 +3,96 @@
   border: none !important;
   background: transparent !important;
   font-family: inherit;
+  color: var(--text-primary) !important;
 }
+
+/* Navigation (< Month Year >) */
+.custom-calendar .react-calendar__navigation {
+  display: flex;
+  height: 44px;
+  margin-bottom: 1rem;
+}
+
+.custom-calendar .react-calendar__navigation button {
+  color: var(--text-primary) !important;
+  min-width: 44px;
+  background: none;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.custom-calendar .react-calendar__navigation button:enabled:hover,
+.custom-calendar .react-calendar__navigation button:enabled:focus {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--primary) !important;
+}
+
+.custom-calendar .react-calendar__navigation button[disabled] {
+  color: var(--text-muted) !important;
+}
+
+/* Weekday Labels (MON TUE WED THU FRI SAT SUN) */
+.custom-calendar .react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-secondary) !important;
+  margin-bottom: 0.5rem;
+}
+
+.custom-calendar .react-calendar__month-view__weekdays__weekday {
+  padding: 0.5rem 0;
+}
+
+.custom-calendar .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+/* Calendar Days Grid Tiles */
 .custom-calendar .react-calendar__tile {
   padding: 0.75em 0.5em;
   border-radius: var(--radius-sm);
+  color: var(--text-primary) !important; /* CRITICAL FIX: Make day numbers brightly visible */
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: none;
+  text-align: center;
+  transition: all 0.2s ease;
 }
+
+.custom-calendar .react-calendar__tile:enabled:hover,
+.custom-calendar .react-calendar__tile:enabled:focus {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--primary) !important;
+}
+
+/* Neighboring Month Days */
+.custom-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  color: var(--text-muted) !important;
+  opacity: 0.4;
+}
+
+/* Today Tile Highlight */
+.custom-calendar .react-calendar__tile--now {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  font-weight: 700;
+  border: 1px solid var(--primary);
+}
+
+/* Active Selected Date Tile */
 .custom-calendar .react-calendar__tile--active {
   background: var(--primary) !important;
-  color: white !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px var(--primary-light);
 }
-.custom-calendar .react-calendar__tile:hover {
-  background: rgba(14, 165, 233, 0.1) !important;
+
+.custom-calendar .react-calendar__tile--active:enabled:hover,
+.custom-calendar .react-calendar__tile--active:enabled:focus {
+  background: var(--primary-hover) !important;
+  color: #ffffff !important;
 }
